@@ -128,6 +128,10 @@
 #include <mach/perflock.h>
 #endif
 
+#ifdef CONFIG_SERIAL_MSM_HS_PURE_ANDROID
+#include <mach/bcm_bt_lpm.h>
+#endif
+
 extern int panel_type;
 
 #define MSM_SHARED_RAM_PHYS 0x40000000
@@ -1824,19 +1828,6 @@ static void __init msm8x60_allocate_memory_regions(void)
 #endif
 }
 
-#ifdef CONFIG_SERIAL_MSM_HS
-static struct msm_serial_hs_platform_data msm_uart_dm1_pdata = {
-	.rx_wakeup_irq = MSM_GPIO_TO_INT(PYRAMID_GPIO_BT_HOST_WAKE),
-	.inject_rx_on_wakeup = 0,
-	.cpu_lock_supported = 1,
-
-	/* for bcm */
-	.bt_wakeup_pin_supported = 1,
-	.bt_wakeup_pin = PYRAMID_GPIO_BT_CHIP_WAKE,
-	.host_wakeup_pin = PYRAMID_GPIO_BT_HOST_WAKE,
-};
-#endif
-
 #if defined(CONFIG_MSM_RPM_LOG) || defined(CONFIG_MSM_RPM_LOG_MODULE)
 
 static struct msm_rpm_log_platform_data msm_rpm_log_pdata = {
@@ -2512,10 +2503,76 @@ static struct platform_device scm_log_device = {
 	.id = -1,
 };
 
+#if defined(CONFIG_SERIAL_MSM_HS) && defined(CONFIG_SERIAL_MSM_HS_PURE_ANDROID)
+static struct msm_serial_hs_platform_data msm_uart_dm1_pdata = {
+	.rx_wakeup_irq = -1,
+	.inject_rx_on_wakeup = 0,
+	.exit_lpm_cb = bcm_bt_lpm_exit_lpm_locked,
+};
+
+static struct bcm_bt_lpm_platform_data bcm_bt_lpm_pdata = {
+	.gpio_wake = PYRAMID_GPIO_BT_CHIP_WAKE,
+	.gpio_host_wake = PYRAMID_GPIO_BT_HOST_WAKE,
+	.request_clock_off_locked = msm_hs_request_clock_off_locked,
+	.request_clock_on_locked = msm_hs_request_clock_on_locked,
+};
+
+struct platform_device pyramid_bcm_bt_lpm_device = {
+	.name = "bcm_bt_lpm",
+	.id = 0,
+	.dev = {
+		.platform_data = &bcm_bt_lpm_pdata,
+	},
+};
+
+#define ATAG_BDADDR 0x43294329  /* mahimahi bluetooth address tag */
+#define ATAG_BDADDR_SIZE 4
+
+#elif defined(CONFIG_SERIAL_MSM_HS)
+static struct msm_serial_hs_platform_data msm_uart_dm1_pdata = {
+	.rx_wakeup_irq = MSM_GPIO_TO_INT(PYRAMID_GPIO_BT_HOST_WAKE),
+	.inject_rx_on_wakeup = 0,
+	.cpu_lock_supported = 1,
+
+	/* for bcm */
+	.bt_wakeup_pin_supported = 1,
+	.bt_wakeup_pin = PYRAMID_GPIO_BT_CHIP_WAKE,
+	.host_wakeup_pin = PYRAMID_GPIO_BT_HOST_WAKE,
+};
+
+/* for bcm */
+static char bdaddress[20];
+extern unsigned char *get_bt_bd_ram(void);
+
+void bt_export_bd_address(void)
+{
+	unsigned char cTemp[6];
+
+	memcpy(cTemp, get_bt_bd_ram(), 6);
+	sprintf(bdaddress, "%02x:%02x:%02x:%02x:%02x:%02x",
+		cTemp[0], cTemp[1], cTemp[2], cTemp[3], cTemp[4], cTemp[5]);
+	printk(KERN_INFO "YoYo--BD_ADDRESS=%s\n", bdaddress);
+}
+
+module_param_string(bdaddress, bdaddress, sizeof(bdaddress), S_IWUSR | S_IRUGO);
+MODULE_PARM_DESC(bdaddress, "BT MAC ADDRESS");
+
+static char bt_chip_id[10] = "bcm4329";
+module_param_string(bt_chip_id, bt_chip_id, sizeof(bt_chip_id), S_IWUSR | S_IRUGO);
+MODULE_PARM_DESC(bt_chip_id, "BT's chip id");
+
+static char bt_fw_version[10] = "v2.0.38";
+module_param_string(bt_fw_version, bt_fw_version, sizeof(bt_fw_version), S_IWUSR | S_IRUGO);
+MODULE_PARM_DESC(bt_fw_version, "BT's fw version");
+#endif
+
 static struct platform_device *surf_devices[] __initdata = {
 	&ram_console_device,
 	&msm_device_smd,
 	&msm_device_uart_dm12,
+#ifdef CONFIG_SERIAL_MSM_HS_PURE_ANDROID
+	&pyramid_bcm_bt_lpm_device,
+#endif
 #ifdef CONFIG_I2C_QUP
 	&msm_gsbi4_qup_i2c_device,
 	&msm_gsbi5_qup_i2c_device,

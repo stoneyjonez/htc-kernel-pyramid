@@ -20,9 +20,10 @@
 /* configuration tags specific to Bluetooth*/
 #define ATAG_BLUETOOTH 0x43294329
 #define MAX_BT_SIZE 0x8U
+#define BDADDR_STR_SIZE 18
 
 static unsigned char bt_bd_ram[MAX_BT_SIZE];
-static char bdaddress[20];
+static char bdaddr[BDADDR_STR_SIZE];
 
 static unsigned char *get_bt_bd_ram(void)
 {
@@ -34,7 +35,7 @@ static int __init parse_tag_bt(const struct tag *tag)
 	unsigned char *dptr = (unsigned char *)(&tag->u);
 	unsigned size;
 	#ifdef ATAG_BT_DEBUG
-    unsigned i;
+  	unsigned i;
 	#endif
 
 	size = min((tag->hdr.size-2)*sizeof(__u32), MAX_BT_SIZE);
@@ -57,12 +58,11 @@ void bt_export_bd_address(void)
 	unsigned char cTemp[6];
 
 	memcpy(cTemp, get_bt_bd_ram(), 6);
-	sprintf(bdaddress, "%02x:%02x:%02x:%02x:%02x:%02x",
-			cTemp[0], cTemp[1], cTemp[2],
-			cTemp[3], cTemp[4], cTemp[5]);
-
-	printk(KERN_INFO "YoYo--BD_ADDRESS=%s\n", bdaddress);
+	sprintf(bdaddr, "%02x:%02x:%02x:%02x:%02x:%02x",
+		cTemp[0], cTemp[1], cTemp[2], cTemp[3], cTemp[4], cTemp[5]);
+	printk(KERN_INFO "BT HW address=%s\n", bdaddr);
 }
-module_param_string(bdaddress, bdaddress, sizeof(bdaddress), S_IWUSR | S_IRUGO);
-MODULE_PARM_DESC(bdaddress, "BT MAC ADDRESS");
+
+module_param_string(bdaddr, bdaddr, sizeof(bdaddr), S_IWUSR | S_IRUGO);
+MODULE_PARM_DESC(bdaddr, "bluetooth address");
 
