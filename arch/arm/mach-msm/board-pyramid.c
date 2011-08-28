@@ -2537,8 +2537,6 @@ static struct msm_serial_hs_platform_data msm_uart_dm1_pdata = {
 	.host_wakeup_pin = PYRAMID_GPIO_BT_HOST_WAKE,
 };
 
-#endif
-
 static char bt_chip_id[10] = "bcm4329";
 module_param_string(bt_chip_id, bt_chip_id, sizeof(bt_chip_id), S_IWUSR | S_IRUGO);
 MODULE_PARM_DESC(bt_chip_id, "BT's chip id");
@@ -2547,6 +2545,7 @@ static char bt_fw_version[10] = "v2.0.38";
 module_param_string(bt_fw_version, bt_fw_version, sizeof(bt_fw_version), S_IWUSR | S_IRUGO);
 MODULE_PARM_DESC(bt_fw_version, "BT's fw version");
 
+#endif
 
 static struct platform_device *surf_devices[] __initdata = {
 	&ram_console_device,
