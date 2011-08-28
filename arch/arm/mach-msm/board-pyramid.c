@@ -2525,9 +2525,6 @@ struct platform_device pyramid_bcm_bt_lpm_device = {
 	},
 };
 
-#define ATAG_BDADDR 0x43294329  /* mahimahi bluetooth address tag */
-#define ATAG_BDADDR_SIZE 4
-
 #elif defined(CONFIG_SERIAL_MSM_HS)
 static struct msm_serial_hs_platform_data msm_uart_dm1_pdata = {
 	.rx_wakeup_irq = MSM_GPIO_TO_INT(PYRAMID_GPIO_BT_HOST_WAKE),
@@ -2539,23 +2536,6 @@ static struct msm_serial_hs_platform_data msm_uart_dm1_pdata = {
 	.bt_wakeup_pin = PYRAMID_GPIO_BT_CHIP_WAKE,
 	.host_wakeup_pin = PYRAMID_GPIO_BT_HOST_WAKE,
 };
-
-/* for bcm */
-static char bdaddress[20];
-extern unsigned char *get_bt_bd_ram(void);
-
-void bt_export_bd_address(void)
-{
-	unsigned char cTemp[6];
-
-	memcpy(cTemp, get_bt_bd_ram(), 6);
-	sprintf(bdaddress, "%02x:%02x:%02x:%02x:%02x:%02x",
-		cTemp[0], cTemp[1], cTemp[2], cTemp[3], cTemp[4], cTemp[5]);
-	printk(KERN_INFO "YoYo--BD_ADDRESS=%s\n", bdaddress);
-}
-
-module_param_string(bdaddress, bdaddress, sizeof(bdaddress), S_IWUSR | S_IRUGO);
-MODULE_PARM_DESC(bdaddress, "BT MAC ADDRESS");
 
 static char bt_chip_id[10] = "bcm4329";
 module_param_string(bt_chip_id, bt_chip_id, sizeof(bt_chip_id), S_IWUSR | S_IRUGO);
@@ -2587,7 +2567,9 @@ static struct platform_device *surf_devices[] __initdata = {
 	&pyramid_rfkill,
 #endif
 #ifdef CONFIG_SERIAL_MSM_HS
+#ifndef CONFIG_SERIAL_MSM_HS_PURE_ANDROID
 	&msm_device_uart_dm1,
+#endif
 #endif
 #ifdef CONFIG_MSM8X60_SSBI
 	&msm_device_ssbi1,
@@ -3912,8 +3894,10 @@ static void __init msm8x60_init_buses(void)
 	msm_device_otg.dev.platform_data = &msm_otg_pdata;
 #endif
 #ifdef CONFIG_SERIAL_MSM_HS
+#ifndef CONFIG_SERIAL_MSM_HS_PURE_ANDROID
 	msm_uart_dm1_pdata.rx_wakeup_irq = gpio_to_irq(PYRAMID_GPIO_BT_HOST_WAKE);
 	msm_device_uart_dm1.name = "msm_serial_hs_brcm"; /* for brcm */
+#endif
 	msm_device_uart_dm1.dev.platform_data = &msm_uart_dm1_pdata;
 #endif
 #ifdef CONFIG_MSM_BUS_SCALING
