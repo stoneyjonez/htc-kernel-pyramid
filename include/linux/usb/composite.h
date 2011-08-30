@@ -103,7 +103,7 @@ struct usb_function {
 
 	struct usb_configuration	*config;
 	/* disabled is zero if the function is enabled */
-	int				hidden;
+	int				disabled;
 
 	/* REVISIT:  bind() functions can be marked __init, which
 	 * makes trouble for section mismatch analysis.  See if
@@ -356,6 +356,14 @@ struct usb_composite_dev {
 	struct switch_dev sdev;
 	/* used by usb_composite_force_reset to avoid signalling switch changes */
 	bool				mute_switch;
+
+	/* switch indicating connected/disconnected state */
+	struct switch_dev    sw_connected;
+	/* switch indicating current configuration */
+	struct switch_dev    sw_config;
+	/* current connected state for sw_connected */
+	bool        connected;
+
 	struct work_struct switch_work;
 };
 
@@ -374,3 +382,4 @@ extern int usb_string_id(struct usb_composite_dev *c);
 	dev_info(&(d)->gadget->dev , fmt , ## args)
 
 #endif	/* __LINUX_USB_COMPOSITE_H */
+
