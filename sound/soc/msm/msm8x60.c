@@ -402,6 +402,13 @@ static int msm_device_put(struct snd_kcontrol *kcontrol,
 	if (set) {
 		if (!dev_info->opened) {
 			set_freq = dev_info->sample_rate;
+
+			if (msm_get_call_state())
+			MM_AUD_INFO("We are in call for rate switch %d (BUZZ)", route_cfg.dev_id);
+			else
+                        MM_AUD_INFO("We are in not call for rate switch %d (BUZZ)", route_cfg.dev_id);
+			
+			
 			if (!msm_device_is_voice(route_cfg.dev_id) && msm_get_call_state()) {
 				msm_get_voc_freq(&tx_freq, &rx_freq);
 				if (dev_info->capability & SNDDEV_CAP_TX)

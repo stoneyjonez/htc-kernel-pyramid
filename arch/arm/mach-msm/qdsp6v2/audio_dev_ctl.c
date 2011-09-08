@@ -238,6 +238,13 @@ int msm_get_call_state(void)
 }
 EXPORT_SYMBOL(msm_get_call_state);
 
+void msm_set_call_state(int i)
+{
+	routing_info.call_state = i ;	
+	pr_debug("setting call state %d\n", routing_info.call_state);
+}
+EXPORT_SYMBOL(msm_set_call_state);
+
 int msm_set_voice_mute(int dir, int mute)
 {
 	pr_debug("dir %x mute %x\n", dir, mute);
@@ -253,11 +260,13 @@ EXPORT_SYMBOL(msm_set_voice_mute);
 
 int msm_set_voice_vol(int dir, s32 volume)
 {
+	//TX is 2
 	if (dir == DIR_TX) {
 		routing_info.voice_tx_vol = volume;
 		broadcast_event(AUDDEV_EVT_DEVICE_VOL_MUTE_CHG,
 					routing_info.voice_tx_dev_id,
 					SESSION_IGNORE);
+	//RX is 1
 	} else if (dir == DIR_RX) {
 		routing_info.voice_rx_vol = volume;
 		broadcast_event(AUDDEV_EVT_DEVICE_VOL_MUTE_CHG,
