@@ -645,9 +645,12 @@ static void cy8c_ts_work_func(struct work_struct *work)
 		if (ts->ambiguous_state == ts->finger_count
 			|| ts->ambiguous_state == report) {
 #ifdef CONFIG_TOUCHSCREEN_COMPATIBLE_REPORT
+			input_report_key(ts->input_dev, BTN_TOUCH, 0);
 			input_report_abs(ts->input_dev, ABS_MT_TOUCH_MAJOR, 0);
 #else
+			input_report_key(ts->input_dev, BTN_TOUCH, 0);
 			input_report_abs(ts->input_dev, ABS_MT_AMPLITUDE, 0);
+			input_report_abs(ts->input_dev, ABS_MT_PRESSURE, 0);
 			input_report_abs(ts->input_dev, ABS_MT_POSITION, 1 << 31);
 #endif
 		} else {
@@ -656,16 +659,20 @@ static void cy8c_ts_work_func(struct work_struct *work)
 				printk(KERN_INFO "Change: %d\n", report);
 			if (report == 0) {
 #ifdef CONFIG_TOUCHSCREEN_COMPATIBLE_REPORT
+			input_report_key(ts->input_dev, BTN_TOUCH, 0);
 			input_report_abs(ts->input_dev, ABS_MT_TOUCH_MAJOR, 0);
 			input_sync(ts->input_dev);
 #else
+			input_report_key(ts->input_dev, BTN_TOUCH, 0);
 			input_report_abs(ts->input_dev, ABS_MT_AMPLITUDE, 0);
+			input_report_abs(ts->input_dev, ABS_MT_PRESSURE, 0);
 			input_report_abs(ts->input_dev, ABS_MT_POSITION, 1 << 31);
 #endif
 			} else {
 				for (loop_i = 0; loop_i < report; loop_i++) {
 					if (!(ts->grip_suppression & BIT(loop_i))) {
 #ifdef CONFIG_TOUCHSCREEN_COMPATIBLE_REPORT
+						input_report_key(ts->input_dev, BTN_TOUCH, 1);
 						input_report_abs(ts->input_dev, ABS_MT_TOUCH_MAJOR,
 							finger_data[loop_i][2]);
 						input_report_abs(ts->input_dev, ABS_MT_WIDTH_MAJOR,
@@ -674,13 +681,16 @@ static void cy8c_ts_work_func(struct work_struct *work)
 							finger_data[loop_i][0]);
 						input_report_abs(ts->input_dev, ABS_MT_POSITION_Y,
 							finger_data[loop_i][1]);
+						input_report_abs(ts->input_dev, ABS_MT_PRESSURE, finger_data[loop_i][2]);
 						input_mt_sync(ts->input_dev);
 #else
+						input_report_key(ts->input_dev, BTN_TOUCH, 1);
 						input_report_abs(ts->input_dev, ABS_MT_AMPLITUDE,
 							finger_data[loop_i][2] << 16 | finger_data[loop_i][2]);
 						input_report_abs(ts->input_dev, ABS_MT_POSITION,
 							(((report - 1) ==  loop_i) ? BIT(31) : 0)
 							| finger_data[loop_i][0] << 16 | finger_data[loop_i][1]);
+						input_report_abs(idev, ABS_MT_PRESSURE, finger_data[loop_i][2]);
 #endif
 						if (ts->debug_log_level & 0x2 && loop_i >= 0)
 							printk(KERN_INFO "Finger %d=> X:%d, Y:%d w:%d, z:%d\n",
@@ -698,6 +708,7 @@ static void cy8c_ts_work_func(struct work_struct *work)
 		for (loop_i = 0; loop_i < ts->finger_count; loop_i++) {
 			if (!(ts->grip_suppression & BIT(loop_i))) {
 #ifdef CONFIG_TOUCHSCREEN_COMPATIBLE_REPORT
+				input_report_key(ts->input_dev, BTN_TOUCH, 1);
 				input_report_abs(ts->input_dev, ABS_MT_TOUCH_MAJOR,
 					finger_data[loop_i][2]);
 				input_report_abs(ts->input_dev, ABS_MT_WIDTH_MAJOR,
@@ -706,13 +717,16 @@ static void cy8c_ts_work_func(struct work_struct *work)
 					finger_data[loop_i][0]);
 				input_report_abs(ts->input_dev, ABS_MT_POSITION_Y,
 					finger_data[loop_i][1]);
+				input_report_abs(ts->input_dev, ABS_MT_PRESSURE, finger_data[loop_i][2]);
 				input_mt_sync(ts->input_dev);
 #else
+				input_report_key(ts->input_dev, BTN_TOUCH, 1);
 				input_report_abs(ts->input_dev, ABS_MT_AMPLITUDE,
 					finger_data[loop_i][2] << 16 | finger_data[loop_i][2]);
-				input_report_abs(ts->input_dev, ABS_MT_POSITION,
+				input_report_abs(ts->input_dev, ABS_MT_POSITION, finger_data[loop_i][2]);
 					(((ts->finger_count - 1) ==  loop_i) ? BIT(31) : 0)
 					| finger_data[loop_i][0] << 16 | finger_data[loop_i][1]);
+				input_report_abs(ts->input_dev, ABS_MT_PRESSURE, finger_data[loop_i][2]);
 #endif
 				if (ts->debug_log_level & 0x2 && loop_i >= 0)
 					printk(KERN_INFO "Finger %d=> X:%d, Y:%d w:%d, z:%d\n",
@@ -737,9 +751,12 @@ static void cy8c_ts_work_func(struct work_struct *work)
 		ts->grip_suppression = 0;
 		cy8c_data_toggle(ts);
 #ifdef CONFIG_TOUCHSCREEN_COMPATIBLE_REPORT
+		input_report_key(ts->input_dev, BTN_TOUCH, 0);
 		input_report_abs(ts->input_dev, ABS_MT_TOUCH_MAJOR, 0);
 #else
+		input_report_key(ts->input_dev, BTN_TOUCH, 0);
 		input_report_abs(ts->input_dev, ABS_MT_AMPLITUDE, 0);
+		input_report_abs(ts->input_dev, ABS_MT_PRESSURE, 0);
 		input_report_abs(ts->input_dev, ABS_MT_POSITION, 1 << 31);
 #endif
 		if (ts->first_pressed == 1) {
@@ -879,7 +896,7 @@ static int cy8c_ts_probe(struct i2c_client *client,
 
 	set_bit(EV_SYN, ts->input_dev->evbit);
 	set_bit(EV_ABS, ts->input_dev->evbit);
-	set_bit(EV_KEY, ts->input_dev->evbit);
+	set_bit(EV_KEY, ts->input_dev->keybit);
 
 	set_bit(KEY_BACK, ts->input_dev->keybit);
 	set_bit(KEY_HOME, ts->input_dev->keybit);
@@ -893,16 +910,17 @@ static int cy8c_ts_probe(struct i2c_client *client,
 		pdata->abs_x_min, pdata->abs_x_max, 0, 0);
 	input_set_abs_params(ts->input_dev, ABS_MT_POSITION_Y,
 		pdata->abs_y_min, pdata->abs_y_max, 0, 0);
-	input_set_abs_params(ts->input_dev, ABS_MT_TOUCH_MAJOR,
-		pdata->abs_pressure_min, pdata->abs_pressure_max, 0, 0);
-	input_set_abs_params(ts->input_dev, ABS_MT_WIDTH_MAJOR,
-		pdata->abs_width_min, pdata->abs_width_max, 0, 0);
+
+	input_set_abs_params(ts->input_dev, ABS_MT_TOUCH_MAJOR, 0, 255, 0, 0);
+	input_set_abs_params(ts->input_dev, ABS_MT_WIDTH_MAJOR, 0, 30, 0, 0);
+	input_set_abs_params(ts->input_dev, ABS_MT_PRESSURE, 0, 255, 0, 0);
 
 #ifndef CONFIG_TOUCHSCREEN_COMPATIBLE_REPORT
 	input_set_abs_params(ts->input_dev, ABS_MT_AMPLITUDE,
 			0, ((pdata->abs_pressure_max << 16) | pdata->abs_width_max), 0, 0);
 		input_set_abs_params(ts->input_dev, ABS_MT_POSITION,
 			0, (BIT(31) | (pdata->abs_x_max << 16) | pdata->abs_y_max), 0, 0);
+	input_set_abs_params(ts->input_dev, ABS_MT_PRESSURE, 0, 255, 0, 0);
 #endif
 
 	ret = input_register_device(ts->input_dev);
